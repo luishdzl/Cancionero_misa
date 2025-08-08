@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoginTrue = false;
   final db = DatabaseHelper();
 
-  login() async {
+  Future<void> login() async {
     var response = await db
         .login(Users(usrName: username.text, usrPassword: password.text));
     if (response == true) {
@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   //Before we show the image, after we copied the image we need to define the location in pubspec.yaml
                   Image.asset(
-                    "lib/assets/login.png",
+                    "lib/assets/login.jpg",
                     width: 210,
                   ),
                   const SizedBox(height: 15),

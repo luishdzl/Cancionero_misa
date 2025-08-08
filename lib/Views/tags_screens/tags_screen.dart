@@ -3,6 +3,8 @@ import 'package:sqlite_flutter_crud/JsonModels/users.dart';
 import 'package:sqlite_flutter_crud/SQLite/sqlite.dart';
 import 'package:sqlite_flutter_crud/JsonModels/tag_model.dart';
 import 'package:sqlite_flutter_crud/Views/auth_dialog.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io'; // Agrega esta línea
 
 class TagsScreen extends StatefulWidget {
   const TagsScreen({super.key});
@@ -71,13 +73,69 @@ class _TagsScreenState extends State<TagsScreen> {
       );
     }
   }
+  
+  // Función para importar base de datos
+Future<void> _importDatabase() async {
+  // Verificar autenticación primero
+  final password = await showDialog<String>(
+    context: context,
+    builder: (context) => const AuthDialog(
+      title: 'Importar Base de Datos',
+      message: 'Ingrese contraseña de administrador',
+    ),
+  );
+  
+  if (password == null) return;
+  
+  // Validar credenciales
+  final isValid = await db.login(Users(
+    usrName: "admin",
+    usrPassword: password,
+  ));
+  
+  if (!isValid) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Contraseña incorrecta')),
+    );
+    return;
+  }
 
+  try {
+    // Seleccionar archivo de backup
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      allowedExtensions: ['db'],
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      // Usar File de dart:io
+      final file = File(result.files.single.path!);
+      await db.importDatabase(file);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Base de datos importada con éxito!')),
+        );
+        _refreshTags();
+      }
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al importar: ${e.toString()}')),
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestión de Categorias'),
         actions: [
+                    // Botón de importación
+          IconButton(
+            icon: const Icon(Icons.upload),
+            onPressed: _importDatabase,
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: () async {

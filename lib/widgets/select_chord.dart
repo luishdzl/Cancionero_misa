@@ -13,18 +13,18 @@ class SelectChord extends StatelessWidget {
   ];
 
   const SelectChord({
-    Key? key,
+    super.key,
     this.value,
     this.onChanged,
     required this.labelText,
     this.hintText,
     this.validator,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: labelText,

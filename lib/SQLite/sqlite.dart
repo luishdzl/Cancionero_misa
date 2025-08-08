@@ -27,16 +27,33 @@ Future<void> _initializeDatabase() async {
     dbPath = join(docsDir.path, databaseName);
   }
 
-  _databasePath = dbPath; // Almacenar la ruta
-  db = sqlite3.open(dbPath);
+    _databasePath = dbPath;
+    db = sqlite3.open(dbPath);
 
-    // Crear todas las tablas
     _createTables();
-    
-    // Insertar etiquetas fijas
     _insertFixedTags();
     
+    // Insertar usuario admin por defecto si no existe
+    db.execute('''
+      INSERT OR IGNORE INTO users (usrName, usrPassword)
+      VALUES ('admin', 'admin')
+    ''');
+
     isInitialized = true;
+  }
+
+  // Función para importar base de datos
+  Future<void> importDatabase(File sourceFile) async {
+    await _initializeDatabase();
+    
+    // Cerrar la conexión actual
+    db.dispose();
+    
+    // Reemplazar la base de datos actual con el backup
+    await sourceFile.copy(_databasePath!);
+    
+    // Reabrir la nueva base de datos
+    db = sqlite3.open(_databasePath!);
   }
 
   void _createTables() {

@@ -107,14 +107,6 @@ class _MassEditScreenState extends State<MassEditScreen> {
       massId: mass.massId,
       title: _titleController.text,
       date: _dateController.text,
-      entrada: selectedSongs['Entrada']?.noteId,
-      piedad: selectedSongs['Piedad']?.noteId,
-      palabra: selectedSongs['Palabra']?.noteId,
-      ofertorio: selectedSongs['Ofertorio']?.noteId,
-      santo: selectedSongs['Santo']?.noteId,
-      cordero: selectedSongs['Cordero']?.noteId,
-      comunion: selectedSongs['Comunión']?.noteId,
-      salida: selectedSongs['Salida']?.noteId,
     );
     
     await db.updateMass(newMass);

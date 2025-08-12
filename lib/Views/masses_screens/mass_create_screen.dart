@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sqlite_flutter_crud/SQLite/sqlite.dart';
 import 'package:sqlite_flutter_crud/JsonModels/mass_model.dart';
 import 'package:sqlite_flutter_crud/JsonModels/note_model.dart';
-import 'package:sqlite_flutter_crud/Views/masses_screens/select_song_dialog.dart';
+import 'package:sqlite_flutter_crud/widgets/MultiSelectDialog.dart';
 
 class MassCreateScreen extends StatefulWidget {
   const MassCreateScreen({super.key});
@@ -17,16 +17,16 @@ class _MassCreateScreenState extends State<MassCreateScreen> {
   final _titleController = TextEditingController();
   final _dateController = TextEditingController();
   
-  Map<String, NoteModel?> selectedSongs = {
-    'Entrada': null,
-    'Piedad': null,
-    'Palabra': null,
-    'Ofertorio': null,
-    'Santo': null,
-    'Cordero': null,
-    'Comunión': null,
-    'Salida': null,
-  };
+Map<String, List<NoteModel>> selectedSongs = {
+  'Entrada': [],
+  'Piedad': [],
+  'Palabra': [],
+  'Ofertorio': [],
+  'Santo': [],
+  'Cordero': [],
+  'Comunión': [],
+  'Salida': [],
+};
 
   @override
   void initState() {
@@ -58,47 +58,51 @@ class _MassCreateScreenState extends State<MassCreateScreen> {
     }
   }
 
-  Future<void> _selectSong(String part) async {
-    final note = await showDialog<NoteModel>(
-      context: context,
-      builder: (context) => const SelectSongDialog(),
-    );
-    
-    if (note != null) {
-      setState(() {
-        selectedSongs[part] = note;
-      });
+Future<void> _selectSongs(String part) async {
+  final notes = await showDialog<List<NoteModel>>(
+    context: context,
+    builder: (context) => MultiSelectDialog(selectedNotes: selectedSongs[part]!),
+  );
+  
+  if (notes != null) {
+    setState(() {
+      selectedSongs[part] = notes;
+    });
+  }
+}
+
+// MODIFICAR _createMass/_saveMass
+Future<void> _createMass() async {
+  if (!_formKey.currentState!.validate()) return;
+  
+  final massId = await db.createMass(MassModel(
+    title: _titleController.text,
+    date: _dateController.text,
+  ));
+  
+  // Guardar todas las canciones
+  for (var part in selectedSongs.keys) {
+    for (var song in selectedSongs[part]!) {
+      await db.addSongToMass(massId, part, song.noteId!);
     }
   }
+  
+  Navigator.pop(context, true);
+}
 
-  Future<void> _createMass() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    final newMass = MassModel(
-      title: _titleController.text,
-      date: _dateController.text,
-      entrada: selectedSongs['Entrada']?.noteId,
-      piedad: selectedSongs['Piedad']?.noteId,
-      palabra: selectedSongs['Palabra']?.noteId,
-      ofertorio: selectedSongs['Ofertorio']?.noteId,
-      santo: selectedSongs['Santo']?.noteId,
-      cordero: selectedSongs['Cordero']?.noteId,
-      comunion: selectedSongs['Comunión']?.noteId,
-      salida: selectedSongs['Salida']?.noteId,
-    );
-    
-    await db.createMass(newMass);
-    Navigator.pop(context, true);
-  }
-
-  Widget _buildPartRow(String title, String part) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(selectedSongs[part]?.noteTitle ?? 'No seleccionada'),
-      trailing: const Icon(Icons.arrow_forward_ios),
-      onTap: () => _selectSong(part),
-    );
-  }
+Widget _buildPartRow(String title, String part) {
+  final songs = selectedSongs[part]!;
+  return ListTile(
+    title: Text(title),
+    subtitle: Text(
+      songs.isEmpty 
+        ? 'No seleccionadas' 
+        : songs.map((s) => s.noteTitle).join(', '),
+    ),
+    trailing: const Icon(Icons.arrow_forward_ios),
+    onTap: () => _selectSongs(part),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

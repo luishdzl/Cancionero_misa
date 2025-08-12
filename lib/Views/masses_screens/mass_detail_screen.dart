@@ -18,16 +18,16 @@ class MassDetailScreen extends StatefulWidget {
 class _MassDetailScreenState extends State<MassDetailScreen> {
   final db = DatabaseHelper();
   late MassModel mass;
-  Map<String, NoteModel?> songs = {
-    'Entrada': null,
-    'Piedad': null,
-    'Palabra': null,
-    'Ofertorio': null,
-    'Santo': null,
-    'Cordero': null,
-    'Comunión': null,
-    'Salida': null,
-  };
+Map<String, List<NoteModel>> songs = {
+  'Entrada': [],
+  'Piedad': [],
+  'Palabra': [],
+  'Ofertorio': [],
+  'Santo': [],
+  'Cordero': [],
+  'Comunión': [],
+  'Salida': [],
+};
 
   @override
   void initState() {
@@ -35,35 +35,70 @@ class _MassDetailScreenState extends State<MassDetailScreen> {
     mass = widget.mass;
     _loadSongs();
   }
-
-  Future<void> _loadSongs() async {
-    final parts = [
-      'entrada', 'piedad', 'palabra', 'ofertorio',
-      'santo', 'cordero', 'comunion', 'salida'
-    ];
-    
-    for (var part in parts) {
-      final noteId = mass.toMap()[part];
-      if (noteId != null) {
-        final note = await db.getNoteById(noteId as int);
-        setState(() {
-          songs[part.capitalize()] = note; // Usa la extensión importada
-        });
-      }
-    }
+// MODIFICAR _loadSongs
+Future<void> _loadSongs() async {
+  final parts = [
+    'Entrada', 'Piedad', 'Palabra', 'Ofertorio',
+    'Santo', 'Cordero', 'Comunión', 'Salida'
+  ];
+  
+  for (var part in parts) {
+    final songsForPart = await db.getSongsForMassPart(mass.massId!, part);
+    setState(() {
+      songs[part] = songsForPart;
+    });
   }
+}
 
-  Widget _buildPartRow(String title, String part) {
-    final note = songs[part];
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(note?.noteTitle ?? 'No seleccionada'),
-      trailing: note != null ? const Icon(Icons.arrow_forward_ios) : null,
-      onTap: note != null 
-          ? () => _openSongDetail(note!)
-          : null,
+// MODIFICAR _buildPartRow
+Widget _buildPartRow(String title, String part) {
+  final songsForPart = songs[part]!;
+  return ListTile(
+    title: Text(title),
+    subtitle: Text(
+      songsForPart.isEmpty 
+        ? 'No seleccionadas' 
+        : songsForPart.map((s) => s.noteTitle).join(', '),
+    ),
+    trailing: songsForPart.isNotEmpty ? const Icon(Icons.arrow_forward_ios) : null,
+    onTap: songsForPart.isNotEmpty 
+        ? () => _openSongsForPart(title, songsForPart)
+        : null,
+  );
+}
+// NUEVA FUNCIÓN PARA ABRIR CANCIONES
+void _openSongsForPart(String title, List<NoteModel> songs) {
+  if (songs.length == 1) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteDetailScreen(note: songs.first),
+      ),
+    );
+  } else {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: songs.map((song) => ListTile(
+            title: Text(song.noteTitle),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NoteDetailScreen(note: song),
+                ),
+              );
+            },
+          )).toList(),
+        ),
+      ),
     );
   }
+}
 
   void _openSongDetail(NoteModel note) {
     Navigator.push(

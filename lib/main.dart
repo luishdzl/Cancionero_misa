@@ -1,3 +1,4 @@
+import 'dart:ui'; 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sqlite_flutter_crud/Authtentication/login.dart';
@@ -5,6 +6,7 @@ import 'package:sqlite_flutter_crud/Views/notes_screens/notes.dart';
 import 'package:sqlite_flutter_crud/Views/tags_screens/tags_screen.dart';
 import 'package:sqlite_flutter_crud/Views/masses_screens/masses_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'; 
+
 void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -64,25 +66,77 @@ class _MainScreenState extends State<MainScreen> {
     const MassesScreen(), // Pantalla de misas
   ];
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.music_note),
-            label: 'Partituras',
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(25.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(25.0),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue[900]!.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(25.0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(Icons.music_note, 'Partituras', 0),
+                    _buildNavItem(Icons.label, 'Categoria', 1),
+                    _buildNavItem(Icons.church, 'Misas', 2),
+                  ],
+                ),
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.label),
-            label: 'Categoria',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    final bool isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.white : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(10.0),
+            child: Icon(
+              icon,
+              color: isSelected ? Colors.blue[900] : Colors.white,
+              size: 24,
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.church),
-            label: 'Misas',
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ],
       ),

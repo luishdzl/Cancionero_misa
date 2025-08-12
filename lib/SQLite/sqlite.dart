@@ -6,6 +6,7 @@ import 'package:sqlite_flutter_crud/JsonModels/note_model.dart';
 import 'package:sqlite_flutter_crud/JsonModels/users.dart';
 import 'package:sqlite_flutter_crud/JsonModels/tag_model.dart';
 import 'package:sqlite_flutter_crud/JsonModels/mass_model.dart';
+import 'package:sqlite_flutter_crud/JsonModels/MassSong.dart';
 
 class DatabaseHelper {
   final databaseName = "notes.db";
@@ -85,29 +86,25 @@ Future<void> _initializeDatabase() async {
       )
     ''');
 
-    db.execute('''
-      CREATE TABLE IF NOT EXISTS masses (
-        massId INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        date TEXT,
-        entrada INTEGER,
-        piedad INTEGER,
-        palabra INTEGER,
-        ofertorio INTEGER,
-        santo INTEGER,
-        cordero INTEGER,
-        comunion INTEGER,
-        salida INTEGER,
-        FOREIGN KEY(entrada) REFERENCES notes(noteId),
-        FOREIGN KEY(piedad) REFERENCES notes(noteId),
-        FOREIGN KEY(palabra) REFERENCES notes(noteId),
-        FOREIGN KEY(ofertorio) REFERENCES notes(noteId),
-        FOREIGN KEY(santo) REFERENCES notes(noteId),
-        FOREIGN KEY(cordero) REFERENCES notes(noteId),
-        FOREIGN KEY(comunion) REFERENCES notes(noteId),
-        FOREIGN KEY(salida) REFERENCES notes(noteId)
-      )
-    ''');
+  db.execute('''
+    CREATE TABLE IF NOT EXISTS masses (
+      massId INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT,
+      date TEXT
+    )
+  ''');
+
+  db.execute('''
+    CREATE TABLE IF NOT EXISTS mass_songs (
+      massSongId INTEGER PRIMARY KEY AUTOINCREMENT,
+      massId INTEGER,
+      tagName TEXT,
+      noteId INTEGER,
+      sortOrder INTEGER DEFAULT 0,
+      FOREIGN KEY(massId) REFERENCES masses(massId),
+      FOREIGN KEY(noteId) REFERENCES notes(noteId)
+    )
+  ''');
   }
 
   void _insertFixedTags() {
@@ -299,37 +296,20 @@ Future<File> exportDatabase() async {
   }
 
   // ========== FUNCIONES DE MISAS ==========
-  Future<int> createMass(MassModel mass) async {
-    await _initializeDatabase();
-    final stmt = db.prepare('''
-      INSERT INTO masses (title, date, entrada, piedad, palabra, ofertorio, santo, cordero, comunion, salida)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''');
-    
-    stmt.execute([
-      mass.title,
-      mass.date,
-      mass.entrada,
-      mass.piedad,
-      mass.palabra,
-      mass.ofertorio,
-      mass.santo,
-      mass.cordero,
-      mass.comunion,
-      mass.salida
-    ]);
-    
-    final id = db.lastInsertRowId;
-    stmt.dispose();
-    return id;
-  }
+Future<int> createMass(MassModel mass) async {
+  await _initializeDatabase();
+  final stmt = db.prepare('INSERT INTO masses (title, date) VALUES (?, ?)');
+  stmt.execute([mass.title, mass.date]);
+  final id = db.lastInsertRowId;
+  stmt.dispose();
+  return id;
+}
 
-  Future<List<MassModel>> getAllMasses() async {
-    await _initializeDatabase();
-    final result = db.select('SELECT * FROM masses ORDER BY date DESC');
-    return List.generate(result.length, (i) => MassModel.fromMap(_rowToMap(result, i)));
-  }
-
+Future<List<MassModel>> getAllMasses() async {
+  await _initializeDatabase();
+  final result = db.select('SELECT * FROM masses ORDER BY date DESC');
+  return List.generate(result.length, (i) => MassModel.fromMap(_rowToMap(result, i)));
+}
   Future<MassModel> getMassById(int massId) async {
     await _initializeDatabase();
     final result = db.select('SELECT * FROM masses WHERE massId = ?', [massId]);
@@ -359,14 +339,6 @@ Future<File> exportDatabase() async {
     stmt.execute([
       mass.title,
       mass.date,
-      mass.entrada,
-      mass.piedad,
-      mass.palabra,
-      mass.ofertorio,
-      mass.santo,
-      mass.cordero,
-      mass.comunion,
-      mass.salida,
       mass.massId
     ]);
     
@@ -374,4 +346,49 @@ Future<File> exportDatabase() async {
     stmt.dispose();
     return changes;
   }
+
+  // ========== FUNCIONES PARA MASS_SONGS ==========
+Future<int> addSongToMass(int massId, String tagName, int noteId) async {
+  await _initializeDatabase();
+  final stmt = db.prepare('''
+    INSERT INTO mass_songs (massId, tagName, noteId)
+    VALUES (?, ?, ?)
+  ''');
+  
+  stmt.execute([massId, tagName, noteId]);
+  final id = db.lastInsertRowId;
+  stmt.dispose();
+  return id;
+}
+
+Future<List<MassSong>> getSongsForMass(int massId, String tagName) async {
+  await _initializeDatabase();
+  final result = db.select(
+    'SELECT * FROM mass_songs WHERE massId = ? AND tagName = ? ORDER BY sortOrder',
+    [massId, tagName]
+  );
+  return List.generate(result.length, (i) => MassSong.fromMap(_rowToMap(result, i)));
+}
+
+Future<List<NoteModel>> getSongsForMassPart(int massId, String tagName) async {
+  await _initializeDatabase();
+  final result = db.select('''
+    SELECT n.* 
+    FROM mass_songs ms
+    JOIN notes n ON ms.noteId = n.noteId
+    WHERE ms.massId = ? AND ms.tagName = ?
+    ORDER BY ms.sortOrder
+  ''', [massId, tagName]);
+  
+  return List.generate(result.length, (i) => NoteModel.fromMap(_rowToMap(result, i)));
+}
+
+Future<int> removeSongFromMass(int massSongId) async {
+  await _initializeDatabase();
+  final stmt = db.prepare('DELETE FROM mass_songs WHERE massSongId = ?');
+  stmt.execute([massSongId]);
+  final changes = db.getUpdatedRows();
+  stmt.dispose();
+  return changes;
+}
 }

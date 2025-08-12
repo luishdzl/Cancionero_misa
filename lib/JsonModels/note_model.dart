@@ -2,10 +2,10 @@ class NoteModel {
   final int? noteId;
   final String noteTitle;
   final String noteContent;
-  final String createdAt;
-  final String originalKey;
-  final String currentKey;
-  final List<String> tags; // Nuevo campo para etiquetas
+  final String? createdAt;
+  final String originalKey; // Cambiar a no nullable
+  final String currentKey;  // Cambiar a no nullable
+  List<String>? tags;
 
   NoteModel({
     this.noteId,
@@ -22,9 +22,8 @@ class NoteModel {
         noteTitle: json["noteTitle"],
         noteContent: json["noteContent"],
         createdAt: json["createdAt"],
-        originalKey: json["originalKey"] ?? 'C',
-        currentKey: json["currentKey"] ?? 'C',
-        tags: json["tags"]?.split(',') ?? [],
+        originalKey: json["originalKey"] ?? 'C', // Valor por defecto
+        currentKey: json["currentKey"] ?? 'C',   // Valor por defecto
       );
 
   Map<String, dynamic> toMap() => {
@@ -34,7 +33,7 @@ class NoteModel {
         "createdAt": createdAt,
         "originalKey": originalKey,
         "currentKey": currentKey,
-        "tags": tags.join(','),
+        "tags": tags?.join(','),
       };
   
   NoteModel copyWith({

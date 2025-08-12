@@ -4,6 +4,9 @@ import 'package:sqlite_flutter_crud/JsonModels/tag_model.dart'; // Importar mode
 import 'package:sqlite_flutter_crud/SQLite/sqlite.dart';
 import 'package:sqlite_flutter_crud/widgets/custom_text_field.dart';
 import 'package:sqlite_flutter_crud/widgets/select_chord.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class CreateNote extends StatefulWidget {
   const CreateNote({super.key});
@@ -16,6 +19,7 @@ class _CreateNoteState extends State<CreateNote> {
   final title = TextEditingController();
   final content = TextEditingController();
   String? selectedKey;
+  String? audioPath; 
   final formKey = GlobalKey<FormState>();
   final db = DatabaseHelper();
   List<String> selectedTags = [];
@@ -33,6 +37,29 @@ class _CreateNoteState extends State<CreateNote> {
     setState(() {
       allTags = tags;
     });
+  }
+
+    // Función para seleccionar un archivo de audio
+  Future<void> _pickAudio() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      allowMultiple: false,
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      final file = File(result.files.single.path!);
+      
+      // Guardar el audio en el directorio de documentos de la app
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName = 'audio_${DateTime.now().millisecondsSinceEpoch}.mp3';
+      final savedFile = File('${appDir.path}/$fileName');
+      
+      await file.copy(savedFile.path);
+      
+      setState(() {
+        audioPath = savedFile.path;
+      });
+    }
   }
 
   @override
@@ -62,6 +89,18 @@ class _CreateNoteState extends State<CreateNote> {
                 hintText: "Selecciona un tono",
                 validator: (value) => value == null ? "Requerido" : null,
               ),
+                    ListTile(
+        leading: const Icon(Icons.audio_file),
+        title: const Text('Audio asociado'),
+        subtitle: audioPath != null 
+            ? Text('Archivo: ${audioPath!.split('/').last}')
+            : const Text('Ningún audio seleccionado'),
+        trailing: IconButton(
+          icon: const Icon(Icons.attach_file),
+          onPressed: _pickAudio,
+        ),
+      ),
+      
               
               // SECCIÓN DE ETIQUETAS - NUEVO CÓDIGO INTEGRADO
               const SizedBox(height: 16),
@@ -115,6 +154,7 @@ class _CreateNoteState extends State<CreateNote> {
               originalKey: selectedKey!,
               currentKey: selectedKey!,
               tags: selectedTags, // Añadir tags seleccionados - NUEVO
+              audioPath: audioPath,
             ));
             Navigator.pop(context, true);
           }

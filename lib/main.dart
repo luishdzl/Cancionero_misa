@@ -66,7 +66,39 @@ class _MainScreenState extends State<MainScreen> {
     const MassesScreen(), // Pantalla de misas
   ];
 
-   @override
+  // Función para mostrar el modal de confirmación de cierre de sesión
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Cerrar sesión"),
+          content: const Text("¿Estás seguro de que quieres cerrar sesión?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text("Cerrar sesión", style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                // Cerrar el modal
+                Navigator.of(context).pop();
+                // Navegar a la pantalla de login
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (Route<dynamic> route) => false,
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
@@ -100,6 +132,8 @@ class _MainScreenState extends State<MainScreen> {
                     _buildNavItem(Icons.music_note, 'Partituras', 0),
                     _buildNavItem(Icons.label, 'Categoria', 1),
                     _buildNavItem(Icons.church, 'Misas', 2),
+                    // Botón de cerrar sesión
+                    _buildLogoutButton(),
                   ],
                 ),
               ),
@@ -136,6 +170,38 @@ class _MainScreenState extends State<MainScreen> {
               color: Colors.white,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para el botón de cerrar sesión
+  Widget _buildLogoutButton() {
+    return GestureDetector(
+      onTap: () => _showLogoutConfirmation(context),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(10.0),
+            child: const Icon(
+              Icons.logout,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Salir',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
             ),
           ),
         ],

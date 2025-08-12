@@ -74,7 +74,8 @@ Future<void> _initializeDatabase() async {
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
         originalKey TEXT,
         currentKey TEXT,
-        tags TEXT
+        tags TEXT,
+        audioPath TEXT 
       )
     ''');
 
@@ -167,8 +168,8 @@ Future<void> _initializeDatabase() async {
   Future<int> createNote(NoteModel note) async {
     await _initializeDatabase();
     final stmt = db.prepare('''
-      INSERT INTO notes (noteTitle, noteContent, createdAt, originalKey, currentKey, tags)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO notes (noteTitle, noteContent, createdAt, originalKey, currentKey, tags, audioPath)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     ''');
     
     stmt.execute([
@@ -177,7 +178,8 @@ Future<void> _initializeDatabase() async {
       note.createdAt,
       note.originalKey,
       note.currentKey,
-      note.tags?.join(',')  // Almacena tags como string separado por comas
+      note.tags?.join(','),
+      note.audioPath  // Nuevo campo
     ]);
     
     final id = db.lastInsertRowId;
@@ -200,18 +202,19 @@ Future<void> _initializeDatabase() async {
     return changes;
   }
 
-  Future<int> updateNote(
+Future<int> updateNote(
     String title, 
     String content, 
     String originalKey,
     String currentKey,
-    List<String>? tags,  // Nuevo parámetro para tags
-    int noteId
+    List<String>? tags,
+    int noteId,
+    String? audioPath  // Nuevo parámetro
   ) async {
     await _initializeDatabase();
     final stmt = db.prepare('''
       UPDATE notes 
-      SET noteTitle = ?, noteContent = ?, originalKey = ?, currentKey = ?, tags = ?
+      SET noteTitle = ?, noteContent = ?, originalKey = ?, currentKey = ?, tags = ?, audioPath = ?
       WHERE noteId = ?
     ''');
     
@@ -220,7 +223,8 @@ Future<void> _initializeDatabase() async {
       content, 
       originalKey, 
       currentKey, 
-      tags?.join(','),  // Convertir lista a string
+      tags?.join(','),
+      audioPath,  // Nuevo campo
       noteId
     ]);
     
@@ -249,6 +253,20 @@ Future<void> _initializeDatabase() async {
       return NoteModel.fromMap(_rowToMap(result, 0));
     }
     throw Exception('Note not found');
+  }
+
+    // Nuevo método para actualizar solo el audio
+  Future<int> updateNoteAudio(int noteId, String audioPath) async {
+    await _initializeDatabase();
+    final stmt = db.prepare('''
+      UPDATE notes 
+      SET audioPath = ? 
+      WHERE noteId = ?
+    ''');
+    stmt.execute([audioPath, noteId]);
+    final changes = db.getUpdatedRows();
+    stmt.dispose();
+    return changes;
   }
 
   // ========== FUNCIONES DE EXPORTACIÓN ==========

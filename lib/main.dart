@@ -38,11 +38,11 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 39, 113, 156),
-        ), // Paréntesis de cierre añadido aquí
-        useMaterial3: true, // Movido fuera de ColorScheme
-      ), // Cierre de ThemeData
-      home: const LoginScreen(), // Pantalla inicial es el login
-      routes: { // Definimos rutas para navegación
+        ), 
+        useMaterial3: true,
+      ),
+      home: const LoginScreen(),
+      routes: {
         '/main': (context) => const MainScreen(),
       },
     );
@@ -58,15 +58,32 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final PageController _pageController = PageController(); // Controlador para animaciones
   
   // Pantallas correspondientes a cada pestaña
   final List<Widget> _screens = [
-    const Notes(),        // Pantalla de partituras
-    const TagsScreen(),   // Pantalla de etiquetas
-    const MassesScreen(), // Pantalla de misas
+    const Notes(),
+    const TagsScreen(),
+    const MassesScreen(),
   ];
 
-  // Función para mostrar el modal de confirmación de cierre de sesión
+  // Animación de transición personalizada
+  Widget _buildSlideTransition(Widget child) {
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(1.0, 0.0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: ModalRoute.of(context)!.animation!,
+        curve: Curves.easeInOut,
+      )),
+      child: FadeTransition(
+        opacity: ModalRoute.of(context)!.animation!,
+        child: child,
+      ),
+    );
+  }
+
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -82,12 +99,19 @@ class _MainScreenState extends State<MainScreen> {
             TextButton(
               child: const Text("Cerrar sesión", style: TextStyle(color: Colors.red)),
               onPressed: () {
-                // Cerrar el modal
                 Navigator.of(context).pop();
-                // Navegar a la pantalla de login
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  PageRouteBuilder(
+                    transitionDuration: const Duration(milliseconds: 500),
+                    pageBuilder: (_, __, ___) => const LoginScreen(),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                  ),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -99,9 +123,24 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose(); // Limpiar el controlador
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // Deshabilita el scroll manual
+        children: _screens,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
       bottomNavigationBar: Container(
         margin: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
@@ -132,7 +171,6 @@ class _MainScreenState extends State<MainScreen> {
                     _buildNavItem(Icons.music_note, 'Partituras', 0),
                     _buildNavItem(Icons.label, 'Categoria', 1),
                     _buildNavItem(Icons.church, 'Misas', 2),
-                    // Botón de cerrar sesión
                     _buildLogoutButton(),
                   ],
                 ),
@@ -147,7 +185,15 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildNavItem(IconData icon, String label, int index) {
     final bool isSelected = _currentIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        if (_currentIndex != index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -177,7 +223,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // Widget para el botón de cerrar sesión
   Widget _buildLogoutButton() {
     return GestureDetector(
       onTap: () => _showLogoutConfirmation(context),

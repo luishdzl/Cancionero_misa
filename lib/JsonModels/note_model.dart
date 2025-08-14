@@ -3,9 +3,10 @@ class NoteModel {
   final String noteTitle;
   final String noteContent;
   final String? createdAt;
-  final String originalKey; // Cambiar a no nullable
-  final String currentKey;  // Cambiar a no nullable
+  final String originalKey;
+  final String currentKey;
   List<String>? tags;
+  String? audioPath; // Nuevo campo para la ruta del audio
 
   NoteModel({
     this.noteId,
@@ -15,6 +16,7 @@ class NoteModel {
     required this.originalKey,
     required this.currentKey,
     this.tags = const [],
+    this.audioPath, // Nuevo campo
   });
 
   factory NoteModel.fromMap(Map<String, dynamic> json) => NoteModel(
@@ -22,8 +24,10 @@ class NoteModel {
         noteTitle: json["noteTitle"],
         noteContent: json["noteContent"],
         createdAt: json["createdAt"],
-        originalKey: json["originalKey"] ?? 'C', // Valor por defecto
-        currentKey: json["currentKey"] ?? 'C',   // Valor por defecto
+        originalKey: json["originalKey"] ?? 'C',
+        currentKey: json["currentKey"] ?? 'C',
+        audioPath: json["audioPath"], // Nuevo campo
+        tags: json["tags"] != null ? (json["tags"] as String).split(',') : [],
       );
 
   Map<String, dynamic> toMap() => {
@@ -33,6 +37,7 @@ class NoteModel {
         "createdAt": createdAt,
         "originalKey": originalKey,
         "currentKey": currentKey,
+        "audioPath": audioPath, // Nuevo campo
         "tags": tags?.join(','),
       };
   
@@ -44,6 +49,7 @@ class NoteModel {
     String? originalKey,
     String? currentKey,
     List<String>? tags,
+    String? audioPath, // Nuevo campo
   }) {
     return NoteModel(
       noteId: noteId ?? this.noteId,
@@ -53,6 +59,7 @@ class NoteModel {
       originalKey: originalKey ?? this.originalKey,
       currentKey: currentKey ?? this.currentKey,
       tags: tags ?? this.tags,
+      audioPath: audioPath ?? this.audioPath, // Nuevo campo
     );
   }
 }
